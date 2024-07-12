@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>元素选择器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .highlight {
+            outline: 2px solid red;
+        }
+
+        iframe {
+            width: 80%;
+            height: 80vh;
+            border: none;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>输入网址并点击任意元素进行选择</h1>
+    <form id="url-form">
+        <input type="text" id="url-input" placeholder="输入网址" />
+        <button type="submit">加载页面</button>
+    </form>
+    <iframe id="webpage-iframe"></iframe>
+
+    <script>
+        // 监听表单提交事件
+        document.getElementById('url-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const url = document.getElementById('url-input').value;
+            document.getElementById('webpage-iframe').src = `/proxy?url=${encodeURIComponent(url)}`;
+        });
+
+        // 监听iframe加载完成事件
+        document.getElementById('webpage-iframe').addEventListener('load', function () {
+            const iframeDocument = document.getElementById('webpage-iframe').contentDocument;
+            iframeDocument.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const element = e.target;
+                element.classList.toggle('highlight');
+                const selector = getCSSSelector(element);
+                const content = element.outerHTML;
+
+                // 打印选中的选择器和内容到控制台
+                console.log('选中的选择器:', selector);
+                console.log('元素内容:', content);
+
+                // 发送AJAX请求到后端
+                fetch('/get_selector', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `selector=${encodeURIComponent(selector)}&content=${encodeURIComponent(content)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('服务器响应:', data);
+                    alert('服务器响应: ' + JSON.stringify(data));
+                });
+            });
+        });
+
+        // 获取元素的CSS选择器
+        function getCSSSelector(element) {
+            if (element.tagName.toLowerCase() === 'html')
+                return 'HTML';
+            if (element === document.body)
+                return 'BODY';
+            let names = [];
+            while (element.parentElement) {
+                if (element.id) {
+                    names.unshift('#' + element.id);
+                    break;
+                } else {
+                    if (element === element.ownerDocument.documentElement)
+                        names.unshift(element.tagName);
+                    else {
+                        let c = 1;
+                        let e = element;
+                        while (e.previousElementSibling) {
+                            e = e.previousElementSibling;
+                            c++;
+                        }
+                        names.unshift(element.tagName + ":nth-child(" + c + ")");
+                    }
+                    element = element.parentElement;
+                }
+            }
+            return names.join(" > ");
+        }
+    </script>
+</body>
+</html>
