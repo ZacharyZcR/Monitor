@@ -49,7 +49,6 @@ def proxy():
         'User-Agent': request.headers.get('User-Agent'),
         'Accept': request.headers.get('Accept'),
         'Accept-Language': request.headers.get('Accept-Language'),
-        'Accept-Encoding': request.headers.get('Accept-Encoding'),
         'Referer': url,
     }
 
